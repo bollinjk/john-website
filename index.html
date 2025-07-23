@@ -183,6 +183,16 @@
             margin-bottom: 5px;
         }
         
+        .news-title a {
+            color: #333;
+            text-decoration: none;
+        }
+        
+        .news-title a:hover {
+            color: #667eea;
+            text-decoration: underline;
+        }
+        
         .news-source {
             font-size: 12px;
             color: #666;
@@ -704,9 +714,12 @@
                 if (data.status === 'ok' && data.articles && data.articles.length > 0) {
                     let html = '';
                     data.articles.slice(0, 5).forEach(article => {
+                        const title = article.url ? 
+                            `<a href="${article.url}" target="_blank">${article.title}</a>` : 
+                            article.title;
                         html += `
                             <div class="news-item">
-                                <div class="news-title">${article.title}</div>
+                                <div class="news-title">${title}</div>
                                 <div class="news-source">${article.source.name} • ${new Date(article.publishedAt).toLocaleDateString()}</div>
                             </div>
                         `;
@@ -826,9 +839,12 @@
                 if (newsData && newsData.length > 0) {
                     newsData.slice(0, 3).forEach(news => {
                         const date = new Date(news.datetime * 1000).toLocaleDateString();
+                        const title = news.url ? 
+                            `<a href="${news.url}" target="_blank">${news.headline}</a>` : 
+                            news.headline;
                         html += `
                             <div class="news-item">
-                                <div class="news-title">${news.headline}</div>
+                                <div class="news-title">${title}</div>
                                 <div class="news-source">${news.source} • ${date}</div>
                             </div>
                         `;
@@ -927,8 +943,8 @@
                 if (data && data.events && data.events.length > 0) {
                     let html = '<div class="sports-grid">';
                     
-                    // Show latest 4 games
-                    data.events.slice(0, 4).forEach(game => {
+                    // Show ALL MLB games
+                    data.events.forEach(game => {
                         const homeTeam = game.competitions[0].competitors.find(team => team.homeAway === 'home');
                         const awayTeam = game.competitions[0].competitors.find(team => team.homeAway === 'away');
                         const status = game.status.type.description;
