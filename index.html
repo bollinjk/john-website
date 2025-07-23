@@ -845,7 +845,7 @@
                 let html = '<div style="font-size: 14px;"><strong>Market News:</strong></div>';
                 
                 if (newsData && newsData.length > 0) {
-                    newsData.slice(0, 3).forEach(news => {
+                    newsData.slice(0, 5).forEach(news => {
                         const date = new Date(news.datetime * 1000).toLocaleDateString();
                         const title = news.url ? 
                             `<a href="${news.url}" target="_blank">${news.headline}</a>` : 
