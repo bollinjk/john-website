@@ -327,8 +327,8 @@
             </div>
             
             <div class="widget">
-                <h2>💹 Alpha Vantage Stocks</h2>
-                <div id="alphaVantageData" class="loading">Loading Alpha Vantage data...</div>
+                <h2>💱 Currency Exchange Rates</h2>
+                <div id="alphaVantageData" class="loading">Loading currency data...</div>
             </div>
             
             <div class="widget">
@@ -767,9 +767,9 @@
             }
         }
 
-        // Fetch Alpha Vantage data
+        // Fetch Alpha Vantage Currency Exchange Rates
         async function fetchAlphaVantageData() {
-            console.log('Fetching Alpha Vantage data...');
+            console.log('Fetching currency exchange rates...');
             const alphaContainer = document.getElementById('alphaVantageData');
             
             if (API_KEYS.alphavantage.includes('YOUR_')) {
@@ -778,32 +778,38 @@
             }
             
             try {
-                // Get real-time quote for a few popular stocks
-                const symbols = ['AAPL', 'MSFT', 'GOOGL'];
-                const promises = symbols.map(async (symbol) => {
-                    const response = await fetch(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${API_KEYS.alphavantage}`);
+                // Get major currency exchange rates
+                const currencyPairs = [
+                    { from: 'USD', to: 'EUR', name: 'USD/EUR' },
+                    { from: 'USD', to: 'GBP', name: 'USD/GBP' },
+                    { from: 'USD', to: 'JPY', name: 'USD/JPY' },
+                    { from: 'USD', to: 'CAD', name: 'USD/CAD' },
+                    { from: 'USD', to: 'AUD', name: 'USD/AUD' },
+                    { from: 'USD', to: 'CHF', name: 'USD/CHF' }
+                ];
+                
+                const promises = currencyPairs.map(async (pair) => {
+                    const response = await fetch(`https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=${pair.from}&to_currency=${pair.to}&apikey=${API_KEYS.alphavantage}`);
                     const data = await response.json();
-                    return { symbol, data };
+                    return { pair, data };
                 });
                 
                 const results = await Promise.all(promises);
                 let html = '<div class="stock-grid">';
                 
                 results.forEach(result => {
-                    const quote = result.data['Global Quote'];
-                    if (quote) {
-                        const price = parseFloat(quote['05. price']);
-                        const change = parseFloat(quote['09. change']);
-                        const changePercent = parseFloat(quote['10. change percent'].replace('%', ''));
-                        const changeClass = change >= 0 ? 'positive' : 'negative';
-                        const changeSign = change >= 0 ? '+' : '';
+                    const exchangeRate = result.data['Realtime Currency Exchange Rate'];
+                    if (exchangeRate) {
+                        const rate = parseFloat(exchangeRate['5. Exchange Rate']);
+                        const lastRefreshed = exchangeRate['6. Last Refreshed'];
+                        const timeZone = exchangeRate['7. Time Zone'];
                         
                         html += `
                             <div class="stock-item">
-                                <div class="stock-symbol">${result.symbol}</div>
-                                <div class="stock-price">$${price.toFixed(2)}</div>
-                                <div class="stock-change ${changeClass}">
-                                    ${changeSign}${change.toFixed(2)} (${changeSign}${changePercent.toFixed(2)}%)
+                                <div class="stock-symbol">${result.pair.name}</div>
+                                <div class="stock-price">${rate.toFixed(4)}</div>
+                                <div class="stock-change" style="color: #666; font-size: 11px;">
+                                    ${new Date(lastRefreshed).toLocaleDateString()}
                                 </div>
                             </div>
                         `;
@@ -814,8 +820,8 @@
                 alphaContainer.innerHTML = html;
                 
             } catch (error) {
-                console.log('Alpha Vantage API error:', error);
-                alphaContainer.innerHTML = '<div class="error">Alpha Vantage API unavailable. Check API key.</div>';
+                console.log('Alpha Vantage Currency API error:', error);
+                alphaContainer.innerHTML = '<div class="error">Currency exchange rates unavailable. Check API key.</div>';
             }
         }
 
