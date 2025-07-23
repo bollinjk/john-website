@@ -949,12 +949,19 @@
                 if (data && data.events && data.events.length > 0) {
                     let html = '<div class="sports-grid">';
                     
-                    // Show ALL MLB games
+                    // Show ALL MLB games with enhanced stats for White Sox and Dodgers
                     data.events.forEach(game => {
                         const homeTeam = game.competitions[0].competitors.find(team => team.homeAway === 'home');
                         const awayTeam = game.competitions[0].competitors.find(team => team.homeAway === 'away');
                         const status = game.status.type.description;
                         const isComplete = game.status.type.completed;
+                        const isInProgress = game.status.type.state === 'in';
+                        
+                        // Check if White Sox or Dodgers are playing
+                        const isWhiteSoxOrDodgers = homeTeam.team.abbreviation === 'CWS' || 
+                                                  awayTeam.team.abbreviation === 'CWS' ||
+                                                  homeTeam.team.abbreviation === 'LAD' || 
+                                                  awayTeam.team.abbreviation === 'LAD';
                         
                         let scoreDisplay = '';
                         if (homeTeam.score && awayTeam.score) {
@@ -963,15 +970,50 @@
                             scoreDisplay = 'vs';
                         }
                         
-                        html += `
-                            <div class="sports-item">
-                                <div class="sports-game">
-                                    <div class="sports-teams">${awayTeam.team.abbreviation} @ ${homeTeam.team.abbreviation}</div>
-                                    <div class="sports-score">${scoreDisplay}</div>
+                        // Enhanced display for White Sox/Dodgers games
+                        if (isWhiteSoxOrDodgers && isInProgress && game.competitions[0].situation) {
+                            const situation = game.competitions[0].situation;
+                            const inning = situation.inning || 1;
+                            const inningHalf = situation.isTopInning ? 'Top' : 'Bottom';
+                            const balls = situation.balls || 0;
+                            const strikes = situation.strikes || 0;
+                            const outs = situation.outs || 0;
+                            
+                            // Check for runners on base
+                            let runnersDisplay = '';
+                            const runners = [];
+                            if (situation.onFirst) runners.push('1st');
+                            if (situation.onSecond) runners.push('2nd');
+                            if (situation.onThird) runners.push('3rd');
+                            runnersDisplay = runners.length > 0 ? `Runners: ${runners.join(', ')}` : 'Bases empty';
+                            
+                            html += `
+                                <div class="sports-item" style="background: #e8f4fd; border-left-color: #667eea;">
+                                    <div class="sports-game">
+                                        <div class="sports-teams" style="color: #667eea;">${awayTeam.team.abbreviation} @ ${homeTeam.team.abbreviation}</div>
+                                        <div class="sports-score" style="color: #667eea;">${scoreDisplay}</div>
+                                    </div>
+                                    <div class="sports-status">${inningHalf} ${inning}</div>
+                                    <div style="font-size: 11px; color: #666; margin-top: 4px;">
+                                        Count: ${balls}-${strikes}, ${outs} out
+                                    </div>
+                                    <div style="font-size: 11px; color: #666; margin-top: 2px;">
+                                        ${runnersDisplay}
+                                    </div>
                                 </div>
-                                <div class="sports-status">${status}</div>
-                            </div>
-                        `;
+                            `;
+                        } else {
+                            // Standard display for other games
+                            html += `
+                                <div class="sports-item">
+                                    <div class="sports-game">
+                                        <div class="sports-teams">${awayTeam.team.abbreviation} @ ${homeTeam.team.abbreviation}</div>
+                                        <div class="sports-score">${scoreDisplay}</div>
+                                    </div>
+                                    <div class="sports-status">${status}</div>
+                                </div>
+                            `;
+                        }
                     });
                     
                     html += '</div>';
