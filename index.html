@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>John's Dashboard</title>
+    <title>John's Advanced Dashboard</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -15,7 +15,7 @@
         }
         
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
         }
         
@@ -61,11 +61,16 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
         
+        .widget.large {
+            grid-column: span 2;
+        }
+        
         .widget h2 {
             margin-top: 0;
             color: #333;
             border-bottom: 2px solid #667eea;
             padding-bottom: 10px;
+            font-size: 18px;
         }
         
         .time-display {
@@ -133,6 +138,21 @@
             margin: 10px 0;
         }
         
+        .weather-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        
+        .weather-detail {
+            background: #f8f9fa;
+            padding: 8px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
         .loading {
             text-align: center;
             color: #666;
@@ -143,6 +163,91 @@
             text-align: center;
             color: #dc3545;
             font-size: 14px;
+        }
+        
+        .news-item {
+            border-bottom: 1px solid #eee;
+            padding: 10px 0;
+            margin-bottom: 10px;
+        }
+        
+        .news-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        
+        .news-title {
+            font-weight: bold;
+            font-size: 14px;
+            line-height: 1.3;
+            margin-bottom: 5px;
+        }
+        
+        .news-source {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .nasa-image {
+            width: 100%;
+            max-height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .nasa-title {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .nasa-explanation {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.4;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+        
+        .economic-grid {
+            display: grid;
+            gap: 10px;
+        }
+        
+        .economic-item {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .economic-title {
+            font-weight: bold;
+            font-size: 13px;
+            margin-bottom: 5px;
+        }
+        
+        .economic-value {
+            font-size: 16px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .economic-date {
+            font-size: 11px;
+            color: #666;
+            margin-top: 3px;
+        }
+        
+        .api-status {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 15px;
+            font-size: 12px;
+            color: #856404;
         }
     </style>
 </head>
@@ -155,6 +260,10 @@
             <div class="date-display" id="currentDate"></div>
         </div>
         
+        <div class="api-status" id="apiStatus">
+            🔑 Replace API keys in JavaScript section to activate all widgets
+        </div>
+        
         <div class="dashboard">
             <div class="widget">
                 <h2>📊 Stock Market</h2>
@@ -162,7 +271,7 @@
             </div>
             
             <div class="widget">
-                <h2>🌤️ Weather</h2>
+                <h2>🌤️ Weather (AccuWeather)</h2>
                 <div id="weatherData" class="weather-info loading">Loading weather data...</div>
             </div>
             
@@ -170,10 +279,47 @@
                 <h2>📈 Market Summary</h2>
                 <div id="marketSummary" class="loading" style="text-align: center;">Loading market data...</div>
             </div>
+            
+            <div class="widget">
+                <h2>💹 Alpha Vantage Stocks</h2>
+                <div id="alphaVantageData" class="loading">Loading Alpha Vantage data...</div>
+            </div>
+            
+            <div class="widget">
+                <h2>📰 Latest News</h2>
+                <div id="newsData" class="loading">Loading news...</div>
+            </div>
+            
+            <div class="widget">
+                <h2>🚀 NASA Picture of the Day</h2>
+                <div id="nasaData" class="loading">Loading NASA data...</div>
+            </div>
+            
+            <div class="widget">
+                <h2>📊 Finnhub Market Data</h2>
+                <div id="finnhubData" class="loading">Loading Finnhub data...</div>
+            </div>
+            
+            <div class="widget">
+                <h2>🏦 Economic Data (FRED)</h2>
+                <div id="fredData" class="loading">Loading economic data...</div>
+            </div>
         </div>
     </div>
 
     <script>
+        // ============================================
+        // API KEYS - REPLACE THESE WITH YOUR ACTUAL KEYS
+        // ============================================
+        const API_KEYS = {
+            accuweather: 'YOUR_ACCUWEATHER_API_KEY_HERE',
+            newsapi: 'YOUR_NEWSAPI_KEY_HERE',
+            alphavantage: 'YOUR_ALPHAVANTAGE_API_KEY_HERE',
+            finnhub: 'YOUR_FINNHUB_API_KEY_HERE',
+            fred: 'YOUR_FRED_API_KEY_HERE'
+            // NASA API doesn't require a key for most endpoints
+        };
+        
         // Update time every second
         function updateTime() {
             const now = new Date();
@@ -197,6 +343,14 @@
         // Stock symbols to track
         const stockSymbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'META', 'NVDA', 'NFLX', 'CRM', 'ORCL'];
         let stockData = [];
+
+        // Check if API keys are provided
+        function checkApiKeys() {
+            const hasKeys = Object.values(API_KEYS).some(key => !key.includes('YOUR_') && key.length > 10);
+            if (hasKeys) {
+                document.getElementById('apiStatus').style.display = 'none';
+            }
+        }
 
         // Fetch live stock data using multiple API attempts
         async function fetchLiveStockData() {
@@ -413,88 +567,298 @@
             }
         }
 
-        // Fetch real weather data for Fontana, CA
-        async function fetchWeatherData() {
-            console.log('Fetching weather data for Fontana, CA...');
+        // Fetch AccuWeather data for Fontana, CA
+        async function fetchAccuWeatherData() {
+            console.log('Fetching AccuWeather data for Fontana, CA...');
             const weatherContainer = document.getElementById('weatherData');
             
+            if (API_KEYS.accuweather.includes('YOUR_')) {
+                weatherContainer.innerHTML = '<div class="error">AccuWeather API key needed</div>';
+                return;
+            }
+            
             try {
-                // Using a free weather API service (wttr.in) that doesn't require API key
-                const response = await fetch('https://wttr.in/Fontana,CA?format=j1');
-                const data = await response.json();
+                // First get location key for Fontana, CA
+                const locationResponse = await fetch(`http://dataservice.accuweather.com/locations/v1/cities/search?apikey=${API_KEYS.accuweather}&q=Fontana,CA`);
+                const locationData = await locationResponse.json();
                 
-                if (data && data.current_condition && data.current_condition[0]) {
-                    const current = data.current_condition[0];
-                    const tempF = current.temp_F;
-                    const desc = current.weatherDesc[0].value;
+                if (locationData && locationData.length > 0) {
+                    const locationKey = locationData[0].Key;
                     
-                    weatherContainer.innerHTML = `
-                        <div class="weather-temp">${tempF}°F</div>
-                        <div class="weather-desc">${desc}</div>
-                        <div style="font-size: 14px; color: #666; margin-top: 10px;">Fontana, CA</div>
-                        <div style="font-size: 12px; color: #888; margin-top: 5px;">
-                            Feels like ${current.FeelsLikeF}°F • Humidity ${current.humidity}%
-                        </div>
-                    `;
+                    // Get current weather conditions
+                    const weatherResponse = await fetch(`http://dataservice.accuweather.com/currentconditions/v1/${locationKey}?apikey=${API_KEYS.accuweather}&details=true`);
+                    const weatherData = await weatherResponse.json();
+                    
+                    if (weatherData && weatherData.length > 0) {
+                        const current = weatherData[0];
+                        const temp = Math.round(current.Temperature.Imperial.Value);
+                        const desc = current.WeatherText;
+                        const humidity = current.RelativeHumidity;
+                        const windSpeed = current.Wind.Speed.Imperial.Value;
+                        const visibility = current.Visibility.Imperial.Value;
+                        const pressure = current.Pressure.Imperial.Value;
+                        const feelsLike = Math.round(current.RealFeelTemperature.Imperial.Value);
+                        
+                        weatherContainer.innerHTML = `
+                            <div class="weather-temp">${temp}°F</div>
+                            <div class="weather-desc">${desc}</div>
+                            <div style="font-size: 14px; color: #666; margin: 10px 0;">Fontana, CA</div>
+                            <div class="weather-details">
+                                <div class="weather-detail">
+                                    <strong>Feels Like</strong><br>${feelsLike}°F
+                                </div>
+                                <div class="weather-detail">
+                                    <strong>Humidity</strong><br>${humidity}%
+                                </div>
+                                <div class="weather-detail">
+                                    <strong>Wind</strong><br>${windSpeed} mph
+                                </div>
+                                <div class="weather-detail">
+                                    <strong>Visibility</strong><br>${visibility} mi
+                                </div>
+                                <div class="weather-detail">
+                                    <strong>Pressure</strong><br>${pressure} in
+                                </div>
+                                <div class="weather-detail">
+                                    <strong>UV Index</strong><br>${current.UVIndex}
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        throw new Error('No weather data available');
+                    }
                 } else {
-                    throw new Error('Invalid weather data format');
+                    throw new Error('Location not found');
                 }
                 
             } catch (error) {
-                console.log('Primary weather API failed, trying backup...', error);
+                console.log('AccuWeather API error:', error);
+                weatherContainer.innerHTML = '<div class="error">AccuWeather API unavailable. Check API key.</div>';
+            }
+        }
+
+        // Fetch NewsAPI data
+        async function fetchNewsData() {
+            console.log('Fetching news data...');
+            const newsContainer = document.getElementById('newsData');
+            
+            if (API_KEYS.newsapi.includes('YOUR_')) {
+                newsContainer.innerHTML = '<div class="error">NewsAPI key needed</div>';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`https://newsapi.org/v2/top-headlines?country=us&pageSize=5&apiKey=${API_KEYS.newsapi}`);
+                const data = await response.json();
                 
-                try {
-                    // Backup: Try OpenWeatherMap-like free service
-                    const response = await fetch('https://api.openweathermap.org/data/2.5/weather?q=Fontana,CA,US&appid=demo&units=imperial');
-                    
-                    if (response.status === 401) {
-                        // Expected - no API key, but shows the structure
-                        throw new Error('API key required');
-                    }
-                    
-                    const data = await response.json();
-                    // This won't work without a real API key, but shows the implementation
-                    
-                } catch (error2) {
-                    console.log('Backup weather API also failed:', error2);
-                    
-                    // Fallback to a reasonable current weather estimate
-                    const now = new Date();
-                    const hour = now.getHours();
-                    let temp, desc;
-                    
-                    // Simple time-based weather simulation for Fontana, CA
-                    if (hour >= 6 && hour < 12) {
-                        temp = 68 + Math.floor(Math.random() * 8); // Morning: 68-75°F
-                        desc = 'Partly Cloudy';
-                    } else if (hour >= 12 && hour < 18) {
-                        temp = 75 + Math.floor(Math.random() * 10); // Afternoon: 75-84°F
-                        desc = 'Sunny';
-                    } else if (hour >= 18 && hour < 22) {
-                        temp = 70 + Math.floor(Math.random() * 8); // Evening: 70-77°F
-                        desc = 'Clear';
-                    } else {
-                        temp = 60 + Math.floor(Math.random() * 8); // Night: 60-67°F
-                        desc = 'Clear';
-                    }
-                    
-                    weatherContainer.innerHTML = `
-                        <div class="weather-temp">${temp}°F</div>
-                        <div class="weather-desc">${desc}</div>
-                        <div style="font-size: 14px; color: #666; margin-top: 10px;">Fontana, CA</div>
-                        <div style="font-size: 12px; color: #888; margin-top: 5px;">
-                            Estimated • Live weather data temporarily unavailable
-                        </div>
-                    `;
+                if (data.status === 'ok' && data.articles && data.articles.length > 0) {
+                    let html = '';
+                    data.articles.slice(0, 5).forEach(article => {
+                        html += `
+                            <div class="news-item">
+                                <div class="news-title">${article.title}</div>
+                                <div class="news-source">${article.source.name} • ${new Date(article.publishedAt).toLocaleDateString()}</div>
+                            </div>
+                        `;
+                    });
+                    newsContainer.innerHTML = html;
+                } else {
+                    throw new Error('No news data available');
                 }
+                
+            } catch (error) {
+                console.log('NewsAPI error:', error);
+                newsContainer.innerHTML = '<div class="error">NewsAPI unavailable. Check API key.</div>';
+            }
+        }
+
+        // Fetch NASA Astronomy Picture of the Day
+        async function fetchNASAData() {
+            console.log('Fetching NASA data...');
+            const nasaContainer = document.getElementById('nasaData');
+            
+            try {
+                const response = await fetch('https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY');
+                const data = await response.json();
+                
+                if (data && data.title) {
+                    if (data.media_type === 'image') {
+                        nasaContainer.innerHTML = `
+                            <img src="${data.url}" alt="${data.title}" class="nasa-image" onerror="this.style.display='none'">
+                            <div class="nasa-title">${data.title}</div>
+                            <div class="nasa-explanation">${data.explanation}</div>
+                        `;
+                    } else {
+                        nasaContainer.innerHTML = `
+                            <div class="nasa-title">${data.title}</div>
+                            <div class="nasa-explanation">${data.explanation}</div>
+                        `;
+                    }
+                } else {
+                    throw new Error('No NASA data available');
+                }
+                
+            } catch (error) {
+                console.log('NASA API error:', error);
+                nasaContainer.innerHTML = '<div class="error">NASA API temporarily unavailable</div>';
+            }
+        }
+
+        // Fetch Alpha Vantage data
+        async function fetchAlphaVantageData() {
+            console.log('Fetching Alpha Vantage data...');
+            const alphaContainer = document.getElementById('alphaVantageData');
+            
+            if (API_KEYS.alphavantage.includes('YOUR_')) {
+                alphaContainer.innerHTML = '<div class="error">Alpha Vantage API key needed</div>';
+                return;
+            }
+            
+            try {
+                // Get real-time quote for a few popular stocks
+                const symbols = ['AAPL', 'MSFT', 'GOOGL'];
+                const promises = symbols.map(async (symbol) => {
+                    const response = await fetch(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${API_KEYS.alphavantage}`);
+                    const data = await response.json();
+                    return { symbol, data };
+                });
+                
+                const results = await Promise.all(promises);
+                let html = '<div class="stock-grid">';
+                
+                results.forEach(result => {
+                    const quote = result.data['Global Quote'];
+                    if (quote) {
+                        const price = parseFloat(quote['05. price']);
+                        const change = parseFloat(quote['09. change']);
+                        const changePercent = parseFloat(quote['10. change percent'].replace('%', ''));
+                        const changeClass = change >= 0 ? 'positive' : 'negative';
+                        const changeSign = change >= 0 ? '+' : '';
+                        
+                        html += `
+                            <div class="stock-item">
+                                <div class="stock-symbol">${result.symbol}</div>
+                                <div class="stock-price">$${price.toFixed(2)}</div>
+                                <div class="stock-change ${changeClass}">
+                                    ${changeSign}${change.toFixed(2)} (${changeSign}${changePercent.toFixed(2)}%)
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+                
+                html += '</div>';
+                alphaContainer.innerHTML = html;
+                
+            } catch (error) {
+                console.log('Alpha Vantage API error:', error);
+                alphaContainer.innerHTML = '<div class="error">Alpha Vantage API unavailable. Check API key.</div>';
+            }
+        }
+
+        // Fetch Finnhub data
+        async function fetchFinnhubData() {
+            console.log('Fetching Finnhub data...');
+            const finnhubContainer = document.getElementById('finnhubData');
+            
+            if (API_KEYS.finnhub.includes('YOUR_')) {
+                finnhubContainer.innerHTML = '<div class="error">Finnhub API key needed</div>';
+                return;
+            }
+            
+            try {
+                // Get market news and stock data
+                const newsResponse = await fetch(`https://finnhub.io/api/v1/news?category=general&token=${API_KEYS.finnhub}`);
+                const newsData = await newsResponse.json();
+                
+                let html = '<div style="font-size: 14px;"><strong>Market News:</strong></div>';
+                
+                if (newsData && newsData.length > 0) {
+                    newsData.slice(0, 3).forEach(news => {
+                        const date = new Date(news.datetime * 1000).toLocaleDateString();
+                        html += `
+                            <div class="news-item">
+                                <div class="news-title">${news.headline}</div>
+                                <div class="news-source">${news.source} • ${date}</div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    html += '<div class="error">No Finnhub news available</div>';
+                }
+                
+                finnhubContainer.innerHTML = html;
+                
+            } catch (error) {
+                console.log('Finnhub API error:', error);
+                finnhubContainer.innerHTML = '<div class="error">Finnhub API unavailable. Check API key.</div>';
+            }
+        }
+
+        // Fetch FRED Economic Data
+        async function fetchFREDData() {
+            console.log('Fetching FRED economic data...');
+            const fredContainer = document.getElementById('fredData');
+            
+            if (API_KEYS.fred.includes('YOUR_')) {
+                fredContainer.innerHTML = '<div class="error">FRED API key needed</div>';
+                return;
+            }
+            
+            try {
+                // Get key economic indicators
+                const indicators = [
+                    { id: 'GDP', name: 'GDP Growth Rate' },
+                    { id: 'UNRATE', name: 'Unemployment Rate' },
+                    { id: 'CPIAUCSL', name: 'Consumer Price Index' },
+                    { id: 'FEDFUNDS', name: 'Federal Funds Rate' }
+                ];
+                
+                const promises = indicators.map(async (indicator) => {
+                    const response = await fetch(`https://api.stlouisfed.org/fred/series/observations?series_id=${indicator.id}&api_key=${API_KEYS.fred}&file_type=json&limit=1&sort_order=desc`);
+                    const data = await response.json();
+                    return { indicator, data };
+                });
+                
+                const results = await Promise.all(promises);
+                let html = '<div class="economic-grid">';
+                
+                results.forEach(result => {
+                    if (result.data.observations && result.data.observations.length > 0) {
+                        const latest = result.data.observations[0];
+                        const value = parseFloat(latest.value);
+                        const date = new Date(latest.date).toLocaleDateString();
+                        
+                        html += `
+                            <div class="economic-item">
+                                <div class="economic-title">${result.indicator.name}</div>
+                                <div class="economic-value">${isNaN(value) ? 'N/A' : value.toFixed(2)}${result.indicator.id === 'UNRATE' || result.indicator.id === 'FEDFUNDS' ? '%' : ''}</div>
+                                <div class="economic-date">Updated: ${date}</div>
+                            </div>
+                        `;
+                    }
+                });
+                
+                html += '</div>';
+                fredContainer.innerHTML = html;
+                
+            } catch (error) {
+                console.log('FRED API error:', error);
+                fredContainer.innerHTML = '<div class="error">FRED API unavailable. Check API key.</div>';
             }
         }
 
         // Initialize everything
         updateTime();
+        checkApiKeys();
         fetchLiveStockData();
         fetchMarketSummary();
-        fetchWeatherData();
+        fetchAccuWeatherData();
+        fetchNewsData();
+        fetchNASAData();
+        fetchAlphaVantageData();
+        fetchFinnhubData();
+        fetchFREDData();
         
         // Update time every second
         setInterval(updateTime, 1000);
@@ -506,7 +870,18 @@
         setInterval(fetchMarketSummary, 300000);
         
         // Fetch fresh weather data every 30 minutes
-        setInterval(fetchWeatherData, 1800000);
+        setInterval(fetchAccuWeatherData, 1800000);
+        
+        // Fetch fresh news every 15 minutes
+        setInterval(fetchNewsData, 900000);
+        
+        // Fetch fresh NASA data once per day
+        setInterval(fetchNASAData, 86400000);
+        
+        // Fetch other APIs every 10 minutes
+        setInterval(fetchAlphaVantageData, 600000);
+        setInterval(fetchFinnhubData, 600000);
+        setInterval(fetchFREDData, 600000);
     </script>
 </body>
 </html>
